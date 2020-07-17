@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Formatting;
 using System.Web.Http;
+using System.Web.Http.Cors;
 
 namespace RedCoreApi_Test
 {
@@ -10,9 +11,12 @@ namespace RedCoreApi_Test
     {
         public static void Register(HttpConfiguration config)
         {
+            //[EnableCors(origins: "*", headers: "*", methods: "*")]
             // Web API configuration and services
 
             // Web API routes
+            var cors = new EnableCorsAttribute("http://localhost:8100/", "*", "*");
+            config.EnableCors(cors);
             config.MapHttpAttributeRoutes();
 
             config.Routes.MapHttpRoute(
@@ -30,50 +34,6 @@ namespace RedCoreApi_Test
             //routeTemplate: "api/{controller}/{id}",
             //defaults: new { id = RouteParameter.Optional }
             //);
-        }
-
-
-        private string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-
-        public string MyAllowSpecificOrigins1 => MyAllowSpecificOrigins;
-
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.AddCors(options =>
-            {
-                options.AddPolicy(name: MyAllowSpecificOrigins1,
-                                  builder =>
-                                  {
-                                      builder.WithOrigins("http://example.com",
-                                                          "http://www.contoso.com");
-                                  });
-            });
-
-            // services.AddResponseCaching();
-            services.AddControllers();
-        }
-
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-        {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
-            app.UseRouting();
-
-            app.UseCors(MyAllowSpecificOrigins1);
-
-            // app.UseResponseCaching();
-
-            app.UseAuthorization();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
         }
     }
 }

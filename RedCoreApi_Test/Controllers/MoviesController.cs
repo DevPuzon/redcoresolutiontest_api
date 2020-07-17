@@ -7,20 +7,24 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
+using System.Web.Http.Cors;
 using System.Web.Mvc;
 
 namespace RedCoreApi_Test.Controllers
 {
     public class MoviesController : ApiController
     {
+        [EnableCors(origins: "*", headers: "*", methods: "*")]
         // GET api/values
-        public List<MoviesModel> Get()
+        public Object Get()
         {
             Response ret = new Response();
             List<MoviesModel> list = new List<MoviesModel>();
@@ -56,23 +60,28 @@ namespace RedCoreApi_Test.Controllers
                 ret.exception = ex.Message;
                 ret.message = "Internal Server Error. Somthing went Wrong!";
 
-                //return Content(HttpStatusCode.InternalServerError, ret);
+                return Content(HttpStatusCode.InternalServerError, ret);
             } 
-            return list;
+            return Ok(ret);
         }
 
 
+        [EnableCors(origins: "*", headers: "*", methods: "*")]
         // GET api/<controller>/5
         public string Get(string id)
         {
             return "value";
         }
 
+        [EnableCors(origins: "*", headers: "*", methods: "*")]
         // POST api/<controller>
         public async Task<object> PostAsync(MoviesModel value)
         {
             Response ret = new Response();
             MoviesModel model = value;
+            string filename = Guid.NewGuid().ToString();
+            model.thumbnail = ImageUtil.SaveImageFile(filename,model.thumbnail.ToString().Split(',')[1]);
+        
             db_con dc = new db_con();
             DataSet ds;
             string query;
@@ -97,10 +106,18 @@ col_desc,col_createdAt,col_updatedAt) values ('" + Guid.NewGuid().ToString() + "
             return Ok(ret);
         }
 
+        [EnableCors(origins: "*", headers: "*", methods: "*")]
         // PUT api/<controller>/5
         public async Task<object> PutAsync(string id, [FromBody] MoviesModel value)
         {
             MoviesModel model = value;
+            //Debug.Write(model.thumbnail);
+            //model.thumbnail = ImageUtil.saveBitmaptoimage(ImageUtil.Base64StringToBitmap(model.thumbnail));
+            //Debug.Write(model.thumbnail);
+
+            string filename = Guid.NewGuid().ToString();
+            ImageUtil.SaveImage(model.thumbnail, filename);
+
             Response ret = new Response();
 
             db_con dc = new db_con();
@@ -131,6 +148,7 @@ col_thumbnail = '"+model.thumbnail+"', " +
             return Ok(ret);
         }
 
+        [EnableCors(origins: "*", headers: "*", methods: "*")]
         // DELETE api/<controller>/5
         public async Task<object> DeleteAsync(string id)
         {
@@ -156,6 +174,14 @@ col_thumbnail = '"+model.thumbnail+"', " +
                 return Content(HttpStatusCode.InternalServerError, ret);
             }
             return Ok(ret);
+        }
+
+        private string saveImage(string bitmap)
+        {
+            string filename = Guid.NewGuid() + ".png";
+            Bitmap bmp1 = new Bitmap(bitmap);
+            bmp1.Save(filename, ImageFormat.Png);
+            return filename;
         }
     }
 }
