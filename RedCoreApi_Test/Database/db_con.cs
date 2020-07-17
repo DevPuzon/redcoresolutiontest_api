@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Data;
-using System.Data.SqlClient; 
+using System.Data.SqlClient;
+using System.Diagnostics;
 
 namespace RedCoreApi_Test.Database
 {
@@ -16,16 +17,10 @@ namespace RedCoreApi_Test.Database
         public static SqlDataAdapter da = new SqlDataAdapter();
         public static DataSet ds = new DataSet();
         public static DataTable dt = new DataTable();
+         
 
 
-        string ConnectionString1 = @"Server=tcp:sofwaresolutionph.database.windows.net,1433;Initial Catalog=softwaresolutionph_project;Persist Security Info=False;User ID=DevPuzon;Password=db09107809998=;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-        public static SqlConnection conn = new SqlConnection();
-        public static SqlCommand cmdd = new SqlCommand();
-        public static SqlDataAdapter daa = new SqlDataAdapter();
-        public static DataSet dss = new DataSet();
-
-
-        public static DataSet Connectionstatic(string query)
+        public DataSet connection(string query)
         {
             try
             {
@@ -35,44 +30,43 @@ namespace RedCoreApi_Test.Database
 
                 ds = new DataSet();
                 da = new SqlDataAdapter(cmd);
-
-                da.Fill(ds, "Table1");
+                da.Fill(ds); 
                 con.Close();
             }
             catch (Exception e)
             {
-                Console.Write(e.Message);
+                Debug.Write("connection err " + e.Message);
             }
             return ds;
         }
-        public DataSet Connection2(string query)
-        {
-            try
-            {
-                conn = new SqlConnection(ConnectionString1);
-                cmdd = new SqlCommand(query, conn);
-                conn.Open();
+        //public DataSet Connection2(string query)
+        //{
+        //    try
+        //    {
+        //        conn = new SqlConnection(ConnectionString1);
+        //        cmdd = new SqlCommand(query, conn);
+        //        conn.Open();
 
-                dss = new DataSet();
-                daa = new SqlDataAdapter(cmdd);
-                daa.Fill(dss, "Table1");
-                conn.Close();
+        //        dss = new DataSet();
+        //        daa = new SqlDataAdapter(cmdd);
+        //        daa.Fill(dss, "Table1");
+        //        conn.Close();
 
-            }
-            catch (Exception e)
-            {
-                Console.Write(e.Message);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Console.Write(e.Message);
 
-            }
-            return dss;
-        }
-        public async Task<DataSet> Connection1Async(string query)
+        //    }
+        //    return dss;
+        //}
+        public async Task<DataSet> ConnectionAsync(string query)
         {
             await Task.Run(() =>
             {
-                Connection2(query);
+                connection(query);
             });
-            return dss;
+            return ds;
         }
     }
 }
