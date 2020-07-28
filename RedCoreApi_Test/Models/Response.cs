@@ -10,6 +10,6 @@ namespace RedCoreApi_Test.Models
         public string message { get; set; }
         public int status_code { get; set; }
         public string exception { get; set; }
-        public object data { get; set; }
+        public Object data { get; set; }
     }
 }

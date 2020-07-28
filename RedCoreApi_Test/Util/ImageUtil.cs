@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Auth;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -59,14 +61,15 @@ namespace RedCoreApi_Test.Util
             return filepath;
         }
 
-        public static void BlobUrl()
-        {
-            var account = new CloudStorageAccount(new StorageCredentials(accountName, accountKey), true);
+        public static string  BlobUrl()
+        { 
+            var account = new CloudStorageAccount(new StorageCredentials("sphv2", "PVIKvZEUBne+2R46SX042EvYp200tU2hZ5Ht3zOf4IdNqljiySgue2HmpNn61GZiMOcBHIyYGlszFCwP7JhYbA=="), true);
             var cloudBlobClient = account.CreateCloudBlobClient();
-            var container = cloudBlobClient.GetContainerReference("container-name");
+            var container = cloudBlobClient.GetContainerReference("randomproject");
             var blob = container.GetBlockBlobReference("image.png");
-            blob.UploadFromFile("File Path ....");//Upload file....
-            var blobUrl = blob.Uri.AbsoluteUri;
+            blob.UploadFromFile(@"C:\Users\Michael\Documents\host_file\1.png");//Upload file....
+            string blobUrl = blob.Uri.AbsoluteUri;
+            return blobUrl;
         }
         public static void ExportToImage(string base64)
         {

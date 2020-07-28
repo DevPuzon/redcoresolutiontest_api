@@ -13,18 +13,16 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Web;
 using System.Web.Http;
 using System.Web.Http.Cors;
-using System.Web.Mvc;
 
 namespace RedCoreApi_Test.Controllers
 {
     public class MoviesController : ApiController
     {
-        [EnableCors(origins: "*", headers: "*", methods: "*")]
-        // GET api/values
-        public Object Get()
+        [Authorize(Roles = "SuperAdmin, User, Admin")]
+        [EnableCors(origins: "*", headers: "*", methods: "*")] 
+        public IHttpActionResult Get()
         {
             Response ret = new Response();
             List<MoviesModel> list = new List<MoviesModel>();
@@ -34,19 +32,22 @@ namespace RedCoreApi_Test.Controllers
             string query;
             try
             {
-                query = $@"select  * from tbl_movies";
+                query = $@"select  col_movie_id,col_title,col_thumbnail,
+col_desc ,col_isrented,col_createdAt,col_updatedAt from tbl_movies";
                 ds = dc.connection(query);
                 for (int i = 0; i < ds.Tables[0].Rows.Count; i++)
                 {
                     drow = ds.Tables[0].Rows[i];
                     list.Add(new MoviesModel
                     {
-                        docid = drow.ItemArray.GetValue(0).ToString(),
-                        thumbnail = drow.ItemArray.GetValue(1).ToString(),
-                        title = drow.ItemArray.GetValue(2).ToString(),
+                        movie_id = int.Parse(drow.ItemArray.GetValue(0).ToString()),
+                         title  = drow.ItemArray.GetValue(1).ToString(),
+                        thumbnail = drow.ItemArray.GetValue(2).ToString(),
                         description = drow.ItemArray.GetValue(3).ToString(),
-                        createdAt = drow.ItemArray.GetValue(4).ToString(),
-                        updatedAt = drow.ItemArray.GetValue(5).ToString(),
+                        isrented = drow.ItemArray.GetValue(4).ToString(),
+                        createdAt = drow.ItemArray.GetValue(5).ToString(),
+                        updatedAt = drow.ItemArray.GetValue(6).ToString(),
+                        
                     });
                 }
                 ret.status_code= 200;
@@ -66,37 +67,40 @@ namespace RedCoreApi_Test.Controllers
         }
 
 
-        [EnableCors(origins: "*", headers: "*", methods: "*")]
-        // GET api/<controller>/5
-        public string Get(string id)
+        [EnableCors(origins: "*", headers: "*", methods: "*")] 
+        public IHttpActionResult Get(string id)
         {
-            return "value";
-        }
-
-        [EnableCors(origins: "*", headers: "*", methods: "*")]
-        // POST api/<controller>
-        public async Task<object> PostAsync(MoviesModel value)
-        {
-            Response ret = new Response();
-            MoviesModel model = value;
-            string filename = Guid.NewGuid().ToString();
-            model.thumbnail = ImageUtil.SaveImageFile(filename,model.thumbnail.ToString().Split(',')[1]);
-        
+            Response ret = new Response(); 
             db_con dc = new db_con();
+            MoviesModel model =null;
             DataSet ds;
+            DataRow drow;
             string query;
             try
             {
-                query = $@"insert into tbl_movies(col_docid,col_thumbnail,col_title,
-col_desc,col_createdAt,col_updatedAt) values ('" + Guid.NewGuid().ToString() + "','" + model.thumbnail + "','" + model.title + "','" + model.description + "','" + DateTime.Now + "','" + DateTime.Now + "')";
-                ds = await dc.ConnectionAsync(query);
+                query = $@"select  col_movie_id, col_title,col_thumbnail,
+col_desc ,col_isrented,col_createdAt,col_updatedAt from tbl_movies where col_movie_id = '" +id+"'";
+                ds = dc.connection(query);
+                drow = ds.Tables[0].Rows[0];
+                model = new MoviesModel
+                {
+                    movie_id = int.Parse(drow.ItemArray.GetValue(0).ToString()),
+
+                    title = drow.ItemArray.GetValue(1).ToString(),
+                    thumbnail = drow.ItemArray.GetValue(2).ToString(),
+                    description = drow.ItemArray.GetValue(3).ToString(),
+                    isrented = drow.ItemArray.GetValue(4).ToString(),
+                    createdAt = drow.ItemArray.GetValue(5).ToString(),
+                    updatedAt = drow.ItemArray.GetValue(6).ToString(),
+                };
 
                 ret.status_code = 200;
-                ret.message = "Success to saved";
+                ret.message = "success";
                 ret.data = model;
             }
             catch (Exception ex)
-            { 
+            {
+
                 ret.status_code = 500;
                 ret.exception = ex.Message;
                 ret.message = "Internal Server Error. Somthing went Wrong!";
@@ -107,16 +111,44 @@ col_desc,col_createdAt,col_updatedAt) values ('" + Guid.NewGuid().ToString() + "
         }
 
         [EnableCors(origins: "*", headers: "*", methods: "*")]
-        // PUT api/<controller>/5
-        public async Task<object> PutAsync(string id, [FromBody] MoviesModel value)
-        {
-            MoviesModel model = value;
-            //Debug.Write(model.thumbnail);
-            //model.thumbnail = ImageUtil.saveBitmaptoimage(ImageUtil.Base64StringToBitmap(model.thumbnail));
-            //Debug.Write(model.thumbnail);
+        [Authorize(Roles = "SuperAdmin, Admin")]
+        public async Task<IHttpActionResult> PostAsync(MoviesModel value)
+        { 
+            Response ret = new Response();
+            MoviesModel model = value; 
+            db_con dc = new db_con();
+            DataSet ds;
+            string query;
+            try
+            {
+                query = $@"insert into tbl_movies(col_thumbnail,
+col_title,col_desc,col_createdAt,col_updatedAt) values 
+('" + model.thumbnail + "','" + model.title + "'," +
+"'" + model.description + "','" + DateTime.Now + "'," +
+"'" + DateTime.Now + "')";
+                ds = await dc.ConnectionAsync(query);
 
-            string filename = Guid.NewGuid().ToString();
-            ImageUtil.SaveImage(model.thumbnail, filename);
+                ret.status_code = 200;
+                ret.message = "Success to save ";
+                ret.data = model;
+            }
+            catch (Exception ex)
+            { 
+                ret.status_code = 500;
+                ret.exception = ex.Message;
+                ret.message = "Internal Server Error. Something went Wrong!";
+
+                return Content(HttpStatusCode.InternalServerError, ret);
+            }
+            return Ok(ret);
+        }
+
+        [EnableCors(origins: "*", headers: "*", methods: "*")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
+        public IHttpActionResult PutAsync(string id, MoviesModel value)
+        {
+            MoviesModel model = value; 
+            string filename = Guid.NewGuid().ToString(); 
 
             Response ret = new Response();
 
@@ -126,13 +158,13 @@ col_desc,col_createdAt,col_updatedAt) values ('" + Guid.NewGuid().ToString() + "
             try
             {
                 query = $@"update tbl_movies set
-col_thumbnail = '"+model.thumbnail+"', " +
+col_thumbnail = '"+model.thumbnail+"'," + 
 "col_title = '"+model.title+"'," +
 "col_desc = '"+model.description+"'," +
-"col_updatedAt = '"+ DateTime.Now + "'" +
-"where col_docid = '"+ id + "'";
-                ds = await dc.ConnectionAsync(query);
-
+"col_isrented = '" + model.isrented + "'," +
+"col_updatedAt = '" + DateTime.Now + "'" +
+"where col_movie_id = '"+ id + "'";
+                ds = dc.connection(query); 
                 ret.status_code = 200;
                 ret.message = "Success to update";
                 ret.data = model;
@@ -141,7 +173,7 @@ col_thumbnail = '"+model.thumbnail+"', " +
             {
                 ret.status_code = 500;
                 ret.exception = ex.Message;
-                ret.message = "Internal Server Error. Somthing went Wrong!";
+                ret.message = "Internal Server Error. Something went Wrong!";
 
                 return Content(HttpStatusCode.InternalServerError, ret);
             }
@@ -149,8 +181,8 @@ col_thumbnail = '"+model.thumbnail+"', " +
         }
 
         [EnableCors(origins: "*", headers: "*", methods: "*")]
-        // DELETE api/<controller>/5
-        public async Task<object> DeleteAsync(string id)
+        [Authorize(Roles = "SuperAdmin, Admin")]
+        public async Task<IHttpActionResult> DeleteAsync(string id)
         {
             Response ret = new Response(); 
 
@@ -159,11 +191,11 @@ col_thumbnail = '"+model.thumbnail+"', " +
             string query;
             try
             {
-                query = $@"delete from tbl_movies where col_docid ='"+id+"'";
+                query = $@"delete from tbl_movies where col_movie_id =" + id  ;
                 ds = await dc.ConnectionAsync(query);
 
                 ret.status_code = 200;
-                ret.message = "Success to deleted"; 
+                ret.message = "Success to delete"; 
             }
             catch (Exception ex)
             { 
@@ -176,12 +208,35 @@ col_thumbnail = '"+model.thumbnail+"', " +
             return Ok(ret);
         }
 
-        private string saveImage(string bitmap)
+
+        //[Authorize(Roles = "SuperAdmin, User, Admin")]
+        [AcceptVerbs("PUT")]
+        [Route("api/movies/rented/{id}")]
+        [EnableCors(origins: "*", headers: "*", methods: "*")]
+        public async Task<IHttpActionResult> PutIsRented(string id, MoviesModel value)
         {
-            string filename = Guid.NewGuid() + ".png";
-            Bitmap bmp1 = new Bitmap(bitmap);
-            bmp1.Save(filename, ImageFormat.Png);
-            return filename;
+            MoviesModel model = value;  
+            Response ret = new Response(); 
+            db_con dc = new db_con();
+            DataSet ds;
+            string query;
+            try
+            {
+                query = $@"update tbl_movies set col_isrented = '" + model.isrented + "' where col_movie_id = " + id;
+                ds = dc.connection(query);
+                ret.status_code = 200;
+                ret.message = "Success to update" ;
+                ret.data = model;
+            }
+            catch (Exception ex)
+            {
+                ret.status_code = 500;
+                ret.exception = ex.Message;
+                ret.message = "Internal Server Error. Something went Wrong!";
+
+                return Content(HttpStatusCode.InternalServerError, ret);
+            }
+            return Ok(ret);
         }
     }
 }
